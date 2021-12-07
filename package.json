@@ -1,0 +1,22 @@
+{
+  "name": "openai-embeddings",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "tsc --build && node lib/src/index.js",
+    "test": "tsc --build && node lib/test/index.js",
+    "build": "tsc --build",
+    "clean": "tsc --build --clean"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.24.0",
+    "dotenv": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.12"
+  }
+}
