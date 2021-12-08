@@ -1,5 +1,7 @@
 import { createEndpoint } from './utils'
 import axios from 'axios';
+import similarity from 'compute-cosine-similarity';
+
 
 export default class Embeddings {
 
@@ -33,5 +35,9 @@ export default class Embeddings {
         );
         const data = await response.data;
         return data;
+    }
+
+    cosineSimilarity = (vector1: number[], vector2: number[]) => {
+        return similarity(vector1, vector2)
     }
 }
