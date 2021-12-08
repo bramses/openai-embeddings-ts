@@ -48,3 +48,13 @@ export function createEndpoint(engine: string): string {
     }
     return `https://api.openai.com/v1/engines/${engine}/embeddings`;
 }
+
+export interface OpenAIResponse {
+    data: {
+        embedding: number[]
+    }[]
+}
+
+export interface EmbeddingsResponse {
+    [key: string]: number[][]
+}

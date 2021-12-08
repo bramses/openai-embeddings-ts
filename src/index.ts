@@ -1,17 +1,10 @@
-import { createEndpoint } from './utils'
+import { createEndpoint, OpenAIResponse, EmbeddingsResponse } from './utils'
 import axios from 'axios';
 import similarity from 'compute-cosine-similarity';
+// const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
 
-interface OpenAIResponse {
-    data: {
-        embedding: number[]
-    }[]
-}
-
-interface EmbeddingsResponse {
-    [key: string]: number[][]
-}
+interface RankingThing { [key: string]: any | undefined }
 
 export default class Embeddings {
 
@@ -52,16 +45,24 @@ export default class Embeddings {
         return similarity(vector1, vector2)
     }
 
-    search = async (embeddings: number[][], queryEmbeddings: number[], numResults: number = 3) => {
-        
-        const results = embeddings.map((vector, i) => {
-            const similarity = this.cosineSimilarity(vector, queryEmbeddings);
-            return {
-                index: i,
-                similarity,
-                vector
-            }
-        }).sort((a, b) => b.similarity - a.similarity);
-        return results.slice(0, numResults);
+    
+
+    search = async (embeddings: number[][], queryEmbeddings: number[][], numResults: number = 3) => {
+        const results: RankingThing  = [];
+        queryEmbeddings.map((queryEmbedding, idx: number) => {
+            const similarityRankings = embeddings.map((vector, i) => {
+                const similarity = this.cosineSimilarity(vector, queryEmbedding);
+                return {
+                    index: i,
+                    similarity,
+                    vector
+                }
+            }).sort((a, b) => b.similarity - a.similarity);
+             similarityRankings.slice(0, numResults);
+             results.push({
+                 [idx]: similarityRankings
+             })
+        });
+        return results;
     }
 }

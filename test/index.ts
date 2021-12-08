@@ -17,14 +17,8 @@ const main = async () => {
     console.log(embeddingsRes['embeddings']!.length)
     console.log(queryEmbeddingRes['embeddings']!.length)
 
-    const searchResults = await embeddings.search(embeddingsRes['embeddings']!, queryEmbeddingRes['embeddings']![0]!)
-    const mapped = searchResults.map(res => {
-        return {
-            index: res.index,
-            score: res.similarity
-        }
-    })
-    console.log(mapped)
+    const searchResults = await embeddings.search(embeddingsRes['embeddings']!, queryEmbeddingRes['embeddings']!)
+    console.log(searchResults)
 }
 
 main()
