@@ -4,18 +4,39 @@ dotenv.config();
 
 const apiKey = process.env.API_KEY;
 
-const embeddings = new Embeddings(apiKey!)
-embeddings.setEngine('davinci-similarity')
-embeddings.createEmbeddings(['hello', 'hello'])
-.then(res => {
-    console.log(JSON.stringify(res, null, 4));
-    console.log(res['data'][0]['embedding'].length);
-    console.log(embeddings.cosineSimilarity(res['data'][0]['embedding'], res['data'][1]['embedding']));
-})
-.catch(err => {
-    console.log(err);
-})
 
-// embeddings.createEmbeddings(['hello', 'hi']) | 0.9328000335526373
-// embeddings.createEmbeddings(['hello', 'bye']) | 0.8489772595319628
-// embeddings.createEmbeddings(['hello', 'hello']) | 1.0000000000000142
+const main = async () => {
+    const embeddings = new Embeddings(apiKey!)
+    embeddings.setEngine('babbage-search-document')
+
+    const queryEmbedding = new Embeddings(apiKey!)
+    queryEmbedding.setEngine('babbage-search-query')
+
+    const embeddingsRes = await embeddings.createEmbeddings(['hello', 'bye', 'see ya later'])
+    const queryEmbeddingRes = await queryEmbedding.createEmbeddings('hello')
+    console.log(embeddingsRes['embeddings']!.length)
+    console.log(queryEmbeddingRes['embeddings']!.length)
+
+    const searchResults = await embeddings.search(embeddingsRes['embeddings']!, queryEmbeddingRes['embeddings']![0]!)
+    const mapped = searchResults.map(res => {
+        return {
+            score: res.index,
+            text: res.similarity
+        }
+    })
+    console.log(mapped)
+}
+
+main()
+// embeddings.createEmbeddings(['hello', 'hi']) | cosineSimilarity 0.9328000335526373
+// embeddings.createEmbeddings(['hello', 'bye']) | cosineSimilarity 0.8489772595319628
+// embeddings.createEmbeddings(['hello', 'hello']) | cosineSimilarity 1.0000000000000142
+
+/* 
+embeddings.search (await embeddings.createEmbeddings(['hello', 'bye', 'see ya later']), await embeddings.createEmbeddings('whats up'))
+[
+  { score: 0, text: 0.24513052775511313 },
+  { score: 2, text: 0.22330884859033295 },
+  { score: 1, text: 0.20145681247050942 }
+]
+*/
