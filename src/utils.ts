@@ -42,10 +42,9 @@ export function createEndpoint(engine: string): string {
         case 'babbage-code-search-text':
             engine = 'babbage-code-search-text';
             break;
-
         default:
             engine = 'ada-similarity';
-
+            break;
     }
     return `https://api.openai.com/v1/engines/${engine}/embeddings`;
 }
