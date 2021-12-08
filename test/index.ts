@@ -20,8 +20,8 @@ const main = async () => {
     const searchResults = await embeddings.search(embeddingsRes['embeddings']!, queryEmbeddingRes['embeddings']![0]!)
     const mapped = searchResults.map(res => {
         return {
-            score: res.index,
-            text: res.similarity
+            index: res.index,
+            score: res.similarity
         }
     })
     console.log(mapped)
