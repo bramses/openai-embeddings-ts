@@ -1,19 +1,18 @@
 import { createEndpoint, OpenAIResponse, EmbeddingsResponse } from './utils'
 import axios from 'axios';
-import similarity from 'compute-cosine-similarity';
+import * as fs from 'fs/promises';
 // const createCsvWriter = require('csv-writer').createObjectCsvWriter;
-
-
-interface RankingThing { [key: string]: any | undefined }
 
 export default class Embeddings {
 
     apiKey: string;
     endpoint: string;
+    embeddings: EmbeddingsResponse;
 
     constructor(apiKey: string) {
         this.apiKey = apiKey;
-        this.endpoint = this.setEngine('ada-similarity')
+        this.endpoint = this.setEngine('ada-similarity');
+        this.embeddings = {};
     }
 
     setEngine = (engine: string) => {
@@ -21,48 +20,34 @@ export default class Embeddings {
         return this.endpoint
     }
 
+    writeEmbeddings = async (embeddings: EmbeddingsResponse, filename: string) => {
+        const writer = await fs.writeFile(filename, JSON.stringify(embeddings))
+        return writer
+    }
+
     createEmbeddings = async (
         input: string | string[],
-    ): Promise<EmbeddingsResponse> => {
-        input = Array.isArray(input) ? input.map(inp => inp.replace(/\n/g, ' ')) : input.replace(/\n/g, ' ')
-        const body = { input };
-
-        const response = await axios.post(this.endpoint, JSON.stringify(body),
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`
-                }
-            }
-        );
-        const data: OpenAIResponse = await response.data;
-        const embeddings = data.data.map(d => d.embedding);
-
-        return { embeddings };
-    }
-
-    cosineSimilarity = (vector1: number[], vector2: number[]) => {
-        return similarity(vector1, vector2)
-    }
-
+    ): Promise<EmbeddingsResponse|null> => {
+        try {
+            input = Array.isArray(input) ? input.map(inp => inp.replace(/\n/g, ' ')) : input.replace(/\n/g, ' ')
+            const body = { input };
     
-
-    search = async (embeddings: number[][], queryEmbeddings: number[][], numResults: number = 3) => {
-        const results: RankingThing  = [];
-        queryEmbeddings.map((queryEmbedding, idx: number) => {
-            const similarityRankings = embeddings.map((vector, i) => {
-                const similarity = this.cosineSimilarity(vector, queryEmbedding);
-                return {
-                    index: i,
-                    similarity,
-                    vector
+            const response = await axios.post(this.endpoint, JSON.stringify(body),
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.apiKey}`
+                    }
                 }
-            }).sort((a, b) => b.similarity - a.similarity);
-             similarityRankings.slice(0, numResults);
-             results.push({
-                 [idx]: similarityRankings
-             })
-        });
-        return results;
+            );
+            const data: OpenAIResponse = await response.data;
+            const embeddings = data.data.map(d => d.embedding);
+    
+            this.embeddings = { embeddings };
+            return { embeddings };
+        } catch (err) {
+            console.error(err);
+            return null;
+        }
     }
 }

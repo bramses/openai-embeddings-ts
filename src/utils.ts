@@ -1,3 +1,5 @@
+import similarity from 'compute-cosine-similarity';
+
 export function createEndpoint(engine: string): string {
     switch (engine) {
         case 'ada-similarity':
@@ -49,6 +51,54 @@ export function createEndpoint(engine: string): string {
     return `https://api.openai.com/v1/engines/${engine}/embeddings`;
 }
 
+export function processData (data: any[], indexedField: string): ProcessedData {
+    const result: string[] = [];
+    data.forEach((item: any) => {
+        result.push(item[indexedField]);
+    });
+
+    return {
+        text: result,
+        original: data
+    };
+}
+
+export function fetchDataFromOriginal (data: ProcessedData, idx: number) {
+    return {
+        original: data.original[idx],
+        text: data.text[idx]
+    };
+}
+
+export async function search(embeddings: number[][], queryEmbeddings: number[][], numResults: number = 3) {
+    const results: RankingThing  = [];
+    queryEmbeddings.map((queryEmbedding, idx: number) => {
+        const similarityRankings = embeddings.map((vector, i) => {
+            const similarity = this.cosineSimilarity(vector, queryEmbedding);
+            return {
+                index: i,
+                similarity,
+                vector
+            }
+        }).sort((a, b) => b.similarity - a.similarity);
+         similarityRankings.slice(0, numResults);
+         results.push({
+             [idx]: similarityRankings
+         })
+    });
+    return results;
+}
+
+export function cosineSimilarity (vector1: number[], vector2: number[]) {
+    return similarity(vector1, vector2)
+}
+
+/** INTERFACES **/
+
+interface RankingThing { 
+    [key: string]: any | undefined 
+}
+
 export interface OpenAIResponse {
     data: {
         embedding: number[]
@@ -57,4 +107,9 @@ export interface OpenAIResponse {
 
 export interface EmbeddingsResponse {
     [key: string]: number[][]
+}
+
+interface ProcessedData {
+    text: string[]
+    original: any
 }

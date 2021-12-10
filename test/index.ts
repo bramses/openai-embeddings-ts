@@ -12,13 +12,6 @@ const main = async () => {
     const queryEmbedding = new Embeddings(apiKey!)
     queryEmbedding.setEngine('babbage-search-query')
 
-    const embeddingsRes = await embeddings.createEmbeddings(['hello', 'bye', 'see ya later'])
-    const queryEmbeddingRes = await queryEmbedding.createEmbeddings('hello')
-    console.log(embeddingsRes['embeddings']!.length)
-    console.log(queryEmbeddingRes['embeddings']!.length)
-
-    const searchResults = await embeddings.search(embeddingsRes['embeddings']!, queryEmbeddingRes['embeddings']!)
-    console.log(searchResults)
 }
 
 main()
