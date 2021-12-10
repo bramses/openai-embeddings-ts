@@ -12,7 +12,9 @@ export default class Embeddings {
     constructor(apiKey: string) {
         this.apiKey = apiKey;
         this.endpoint = this.setEngine('ada-similarity');
-        this.embeddings = {};
+        this.embeddings = {
+            embeddings: []
+        };
     }
 
     setEngine = (engine: string) => {

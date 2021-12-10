@@ -1,4 +1,5 @@
 import similarity from 'compute-cosine-similarity';
+import Embeddings from './index';
 
 export function createEndpoint(engine: string): string {
     switch (engine) {
@@ -51,7 +52,7 @@ export function createEndpoint(engine: string): string {
     return `https://api.openai.com/v1/engines/${engine}/embeddings`;
 }
 
-export function processData (data: any[], indexedField: string): ProcessedData {
+export function processData(data: any[], indexedField: string): ProcessedData {
     const result: string[] = [];
     data.forEach((item: any) => {
         result.push(item[indexedField]);
@@ -63,40 +64,53 @@ export function processData (data: any[], indexedField: string): ProcessedData {
     };
 }
 
-export function fetchDataFromOriginal (data: ProcessedData, idx: number) {
+export function fetchDataFromOriginal(data: ProcessedData, idx: number) {
     return {
         original: data.original[idx],
         text: data.text[idx]
     };
 }
 
-export async function search(embeddings: number[][], queryEmbeddings: number[][], numResults: number = 3) {
-    const results: RankingThing  = [];
-    queryEmbeddings.map((queryEmbedding, idx: number) => {
-        const similarityRankings = embeddings.map((vector, i) => {
-            const similarity = this.cosineSimilarity(vector, queryEmbedding);
-            return {
+export async function embedQuery(query: string | string[], engine: string, apiKey: string): Promise<EmbeddingsResponse | null> {
+    try {
+        const queryEmbedding = new Embeddings(apiKey!)
+        queryEmbedding.setEngine(engine)
+        return queryEmbedding.createEmbeddings(query)
+    } catch (err) {
+        console.error(err)
+        return null
+    }
+}
+
+export async function search(documentEmbeddings: number[][], queryEmbeddings: number[][], numResults: number = 3) {
+    const results: SearchResults[][] = [];
+    queryEmbeddings.map((queryEmbedding) => {
+        const similarityRankings = documentEmbeddings.map((vector, i) => {
+            const similarity = cosineSimilarity(vector, queryEmbedding);
+            return { 
                 index: i,
                 similarity,
                 vector
             }
-        }).sort((a, b) => b.similarity - a.similarity);
-         similarityRankings.slice(0, numResults);
-         results.push({
-             [idx]: similarityRankings
-         })
+        })
+        .sort((a, b) => b.similarity - a.similarity);
+        
+        const slicedRankings = similarityRankings.slice(0, numResults);
+        results.push(slicedRankings)
     });
     return results;
 }
 
-export function cosineSimilarity (vector1: number[], vector2: number[]) {
+export function cosineSimilarity(vector1: number[], vector2: number[]): number {
     return similarity(vector1, vector2)
 }
 
-/** INTERFACES **/
+/* INTERFACES */
 
-interface RankingThing { 
-    [key: string]: any | undefined 
+interface SearchResults {
+    index: number,
+    similarity: number,
+    vector: number[]
 }
 
 export interface OpenAIResponse {
@@ -106,7 +120,7 @@ export interface OpenAIResponse {
 }
 
 export interface EmbeddingsResponse {
-    [key: string]: number[][]
+    embeddings: number[][]
 }
 
 interface ProcessedData {
