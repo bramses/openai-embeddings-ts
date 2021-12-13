@@ -75,6 +75,9 @@ export async function embedQuery(query: string | string[], engine: string, apiKe
     try {
         const queryEmbedding = new Embeddings(apiKey!)
         queryEmbedding.setEngine(engine)
+        if (!Array.isArray(query)) {
+            query = [query];
+        }
         return queryEmbedding.createEmbeddings(query)
     } catch (err) {
         console.error(err)
@@ -121,6 +124,7 @@ export interface OpenAIResponse {
 
 export interface EmbeddingsResponse {
     embeddings: number[][]
+    text: string[]
 }
 
 interface ProcessedData {

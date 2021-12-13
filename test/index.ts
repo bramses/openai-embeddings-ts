@@ -12,6 +12,7 @@ const main = async () => {
     embeddings.setEngine('babbage-search-document')
     const transcriptData = processData(transcript, 'text');
     const docEmbeddings = await embeddings.createEmbeddings(transcriptData.text)
+    embeddings.writeEmbeddings(docEmbeddings!, './test/test.json')
     const queryEmbedding = await embedQuery(queries, 'babbage-search-query', apiKey!)
     const results = await search(docEmbeddings!.embeddings, queryEmbedding!.embeddings, 3)
 
