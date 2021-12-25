@@ -1,7 +1,6 @@
 import { createEndpoint, OpenAIResponse, EmbeddingsResponse } from './utils'
 import axios from 'axios';
 import * as fs from 'fs/promises';
-// const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
 export default class Embeddings {
 

@@ -17,8 +17,9 @@ export default class Youtube {
     this.tag = 'youtube';
     
     this.embeddingsObj = new Embeddings(this.apiKey);
-    this.embeddingsObj.setEngine('babbage-search-document')
+    this.embeddingsObj.setEngine('babbage-search-document');
   }
+
 
   setVideoId(videoId: string) {
     this.videoId = videoId;

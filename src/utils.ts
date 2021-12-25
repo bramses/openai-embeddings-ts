@@ -93,8 +93,12 @@ export function createEndpoint(engine: string): string {
     return `https://api.openai.com/v1/engines/${engine}/embeddings`;
 }
 
+export function cleanString(str: string): string {
+    return str.replace(/\n/g, " ").trim() // new lines should be replaced with spaces as per https://beta.openai.com/docs/guides/embeddings/use-cases
+}
+
 /**
- * 
+ * example https://github.com/openai/openai-python/blob/main/examples/embeddings/Obtain_dataset.ipynb
  * @param data any json object
  * @param indexedField field to be indexed from json object, like title, text, etc.
  * @returns an object with text and original data for linking
