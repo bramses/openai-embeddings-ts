@@ -1,5 +1,46 @@
 import similarity from 'compute-cosine-similarity';
 import Embeddings from './index';
+const { encode } = require('gpt-3-encoder')
+
+export function checkLength(text: string, maxChunkLength: number = 2000) {
+    const encoded = encode(text)
+    if (encoded.length > maxChunkLength) {
+        return true
+    }
+    return false
+}
+
+/**
+ * a chunking algorithm that splits a string into chunks of a maximum length as dictated by max tokens allowed by the API 
+ * Does not respect spaces, so it is not suitable for splitting text into sentences
+ * @param document document to be chunked
+ * @returns chunks of the document
+ */
+export function chunkDocument (document: string): string[] {
+    const chunks: string[] = []
+    let chunksAboveTokenLimit = [] // [true, false, etc] want all to be false
+    let numOfSubdivisions = 0
+    chunksAboveTokenLimit.push(checkLength(document))
+    while (chunksAboveTokenLimit.includes(true)) {
+        numOfSubdivisions++
+        chunksAboveTokenLimit = []
+        let maxChunkLength = Math.floor(document.length / numOfSubdivisions)
+        for (let i = 0; i < numOfSubdivisions; i++) {
+            const chunk = document.slice(i * maxChunkLength, (i + 1) * maxChunkLength)
+            chunksAboveTokenLimit.push(checkLength(chunk))
+        }
+    }
+
+    let maxChunkLength = Math.floor(document.length / numOfSubdivisions)
+    for (let i = 0; i < numOfSubdivisions; i++) {
+        const chunk = document.slice(i * maxChunkLength, (i + 1) * maxChunkLength)
+        chunks.push(chunk)
+    }
+    
+    console.log('Number of subdivisions: ', numOfSubdivisions)
+
+    return chunks
+}
 
 export function createEndpoint(engine: string): string {
     switch (engine) {
@@ -52,6 +93,12 @@ export function createEndpoint(engine: string): string {
     return `https://api.openai.com/v1/engines/${engine}/embeddings`;
 }
 
+/**
+ * 
+ * @param data any json object
+ * @param indexedField field to be indexed from json object, like title, text, etc.
+ * @returns an object with text and original data for linking
+ */
 export function processData(data: any[], indexedField: string): ProcessedData {
     const result: string[] = [];
     data.forEach((item: any) => {
@@ -64,6 +111,12 @@ export function processData(data: any[], indexedField: string): ProcessedData {
     };
 }
 
+/**
+ * fetch index from ProcessedData
+ * @param data ProcessedData object
+ * @param idx number of index to be fetched from original data
+ * @returns single item from original data
+ */
 export function fetchDataFromOriginal(data: ProcessedData, idx: number) {
     return {
         original: data.original[idx],
@@ -71,6 +124,13 @@ export function fetchDataFromOriginal(data: ProcessedData, idx: number) {
     };
 }
 
+/**
+ * use the openai api to embed a query
+ * @param query query|queries to be searched
+ * @param engine what engine to encode query with
+ * @param apiKey api key for openai api 
+ * @returns Embeddings object
+ */
 export async function embedQuery(query: string | string[], engine: string, apiKey: string): Promise<EmbeddingsResponse | null> {
     try {
         const queryEmbedding = new Embeddings(apiKey!)
@@ -85,7 +145,14 @@ export async function embedQuery(query: string | string[], engine: string, apiKe
     }
 }
 
-export async function search(documentEmbeddings: number[][], queryEmbeddings: number[][], numResults: number = 3) {
+/**
+ * Run cosine similarity search on all documents in the database against a list of queries, and return the top {numResults} results
+ * @param documentEmbeddings number[][] - embeddings of source document
+ * @param queryEmbeddings number[][] - embeddings of queries (queries are a list)
+ * @param numResults number - number of results to be returned
+ * @returns SearchResult[][] - list of results
+ */
+export function search(documentEmbeddings: number[][], queryEmbeddings: number[][], numResults: number = 3): SearchResults[][] {
     const results: SearchResults[][] = [];
     queryEmbeddings.map((queryEmbedding) => {
         const similarityRankings = documentEmbeddings.map((vector, i) => {
@@ -104,6 +171,12 @@ export async function search(documentEmbeddings: number[][], queryEmbeddings: nu
     return results;
 }
 
+/**
+ * run cosine similarity on two vectors
+ * @param vector1 number[]
+ * @param vector2 number[]
+ * @returns number
+ */
 export function cosineSimilarity(vector1: number[], vector2: number[]): number {
     return similarity(vector1, vector2)
 }
