@@ -1,8 +1,23 @@
 import similarity from 'compute-cosine-similarity';
 import Embeddings from './index';
 const { encode } = require('gpt-3-encoder')
+import fs from 'fs'
+import path from 'path';
 
-export function checkLength(text: string, maxChunkLength: number = 2000) {
+
+export function readFile(filePath: string): Promise<string> {
+    const fullPath = path.join(__dirname, filePath) 
+    return new Promise((resolve, reject) => {
+        fs.readFile(fullPath, 'utf-8', (err, data) => {
+            if (err) {
+                reject(err)
+            }
+            resolve(data.toString())
+        })
+    })
+}
+
+function checkLength(text: string, maxChunkLength: number = 2000) {
     const encoded = encode(text)
     if (encoded.length > maxChunkLength) {
         return true
@@ -31,10 +46,14 @@ export function chunkDocument (document: string): string[] {
         }
     }
 
-    let maxChunkLength = Math.floor(document.length / numOfSubdivisions)
-    for (let i = 0; i < numOfSubdivisions; i++) {
-        const chunk = document.slice(i * maxChunkLength, (i + 1) * maxChunkLength)
-        chunks.push(chunk)
+    if(numOfSubdivisions > 1) {
+        let maxChunkLength = Math.floor(document.length / numOfSubdivisions)
+        for (let i = 0; i < numOfSubdivisions; i++) {
+            const chunk = document.slice(i * maxChunkLength, (i + 1) * maxChunkLength)
+            chunks.push(chunk)
+        }
+    } else {
+        chunks.push(document)
     }
     
     console.log('Number of subdivisions: ', numOfSubdivisions)
@@ -42,6 +61,11 @@ export function chunkDocument (document: string): string[] {
     return chunks
 }
 
+/**
+ * 
+ * @param engine engine to be used for embedding
+ * @returns http endpoint for embedding
+ */
 export function createEndpoint(engine: string): string {
     switch (engine) {
         case 'ada-similarity':
