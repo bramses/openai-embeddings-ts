@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import { chunkDocument, EmbeddingsResponse, readFile, embedQuery, search } from '../src/utils'
 import Embeddings from '../src/index';
-import * as _ from 'lodash'
+import _ from 'lodash'
 dotenv.config();
 
 const apiKey = process.env.API_KEY;
@@ -43,7 +43,8 @@ const main = async () => {
 
         results.forEach((result, idx: number) => {
         console.log(`qry: ${queries[idx]}`)
-        console.log(result)
+        console.log('Index: ', result[0]?.index)
+        console.log('Similarity: ', result[0]?.similarity)
         })
     }
 }
