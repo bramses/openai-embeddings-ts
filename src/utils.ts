@@ -58,8 +58,6 @@ export function chunkDocument (document: string): string[] {
         chunks.push(document)
     }
     
-    console.log('Number of subdivisions: ', numOfSubdivisions)
-
     return chunks
 }
 
@@ -129,7 +127,7 @@ export function cleanString(str: string): string {
  * @param indexedField field to be indexed from json object, like title, text, etc.
  * @returns an object with text and original data for linking
  */
-export function processData(data: any[], indexedField: string): ProcessedData {
+export function processJSONData(data: any[], indexedField: string): ProcessedData {
     const result: string[] = [];
     data.forEach((item: any) => {
         result.push(item[indexedField]);

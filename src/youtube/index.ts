@@ -1,6 +1,6 @@
 // youtube transcript search
 import Embeddings from '../../src/index';
-import { processData, EmbeddingsResponse } from '../../src/utils'
+import { processJSONData, EmbeddingsResponse } from '../../src/utils'
 
 
 export default class Youtube {
@@ -31,7 +31,7 @@ export default class Youtube {
   }
 
   private setTranscriptText () {
-    const processed = processData(this.transcript, 'text');
+    const processed = processJSONData(this.transcript, 'text');
     this.transcriptText = processed.text;
   }
 

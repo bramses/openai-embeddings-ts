@@ -1,6 +1,6 @@
 import Embeddings from '../src/index';
 import * as dotenv from 'dotenv';
-import { embedQuery, processData, search, fetchDataFromOriginal } from '../src/utils'
+import { embedQuery, processJSONData, search, fetchDataFromOriginal } from '../src/utils'
 dotenv.config();
 
 const apiKey = process.env.API_KEY;
@@ -10,7 +10,7 @@ const queries = ['algorand', 'italy']
 const main = async () => {
     const embeddings = new Embeddings(apiKey!)
     embeddings.setEngine('babbage-search-document')
-    const transcriptData = processData(transcript, 'text');
+    const transcriptData = processJSONData(transcript, 'text');
     const docEmbeddings = await embeddings.createEmbeddings(transcriptData.text)
     embeddings.writeEmbeddings(docEmbeddings!, './test/test.json')
     const queryEmbedding = await embedQuery(queries, 'babbage-search-query', apiKey!)
