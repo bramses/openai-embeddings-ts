@@ -16,14 +16,14 @@ const main = async () => {
         .split('\n')
         .filter(line => line.length > 0)
         .map(line => line.trim())
-        .map(doc => chunkDocument(doc))
+        .map(doc => JSON.stringify(chunkDocument(doc)))
     
     const flattenedChunks = _.flatten(chunks)
     
     const embeddings_s: (EmbeddingsResponse| null)[] = []
     const embeddings = new Embeddings(apiKey!)
     embeddings.setEngine('babbage-search-document')
-    const docEmbeddings = await embeddings.createEmbeddings(flattenedChunks!.slice(0, 10))
+    const docEmbeddings = await embeddings.createEmbeddings(flattenedChunks!)
     embeddings_s.push(docEmbeddings)
     
     
@@ -33,6 +33,7 @@ const main = async () => {
         'embeddings_s': embeddings_s
     }
     console.log(doc.embeddings_s)
+    console.log(doc.embeddings_s[0]?.text[22])
 
     const mappedDocEmbeddings = doc.embeddings_s.map(embedding => embedding!.embeddings)
     const queryEmbedding = await embedQuery(queries, 'babbage-search-query', apiKey!)
