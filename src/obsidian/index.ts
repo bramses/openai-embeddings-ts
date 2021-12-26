@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-import { chunkDocument, readFile } from '../utils'
+import { chunkDocument, readFile, EmbeddingsResponse, search } from '../utils'
 import Embeddings from '../index';
 import _ from 'lodash'
 dotenv.config();
@@ -48,4 +48,42 @@ export default class Obsidian {
         this.documentWithEmbeddings = doc // TODO: for classes do I need to set this or just return as normal?
         return doc
     }
+}
+
+export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbeddings[], queryEmbeddings: EmbeddingsResponse, queries: string[]) {
+    const searchResults = []
+    for (let i = 0; i < obsidianDocuments.length; i++) {
+        const doc = obsidianDocuments[i];
+        searchResults.push(search(doc!.embeddings!.embeddings, queryEmbeddings.embeddings, 1))
+    }
+
+    const similarityPerDocument = []
+    for (let i = 0; i < queries.length; i++) {
+        const forQuery = []
+        for (let j = 0; j < searchResults.length; j++) {
+            const searchResult = searchResults[j]
+            forQuery.push({
+                searchResult: searchResult![i]![0],
+                docNum: j
+            })
+        }
+        similarityPerDocument.push(forQuery)
+    }
+
+    for (let i = 0; i < similarityPerDocument.length; i++) {
+        const groupedByQuery = similarityPerDocument[i]
+        const sortedBySimilarity = _.reverse(_.sortBy(groupedByQuery, 'searchResult.similarity'))
+        console.log(
+            `query :: ${queries[i]}
+            result :: ${obsidianDocuments[sortedBySimilarity[0]!.docNum]?.embeddings?.text[sortedBySimilarity[0]!.searchResult!.index]}` )   
+    }
+
+}
+
+// INTERFACES
+
+export interface ObsidianDocumentWithEmbeddings {
+    filename: string;
+    chunks: string[][];
+    embeddings: EmbeddingsResponse | null;
 }
