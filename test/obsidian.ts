@@ -1,10 +1,13 @@
 import * as dotenv from 'dotenv';
-import { chunkDocument, EmbeddingsResponse, readFile } from '../src/utils'
+import { chunkDocument, EmbeddingsResponse, readFile, embedQuery, search } from '../src/utils'
 import Embeddings from '../src/index';
+import * as _ from 'lodash'
 dotenv.config();
 
 const apiKey = process.env.API_KEY;
 const obsidianRootPath = process.env.OBSIDIAN_ROOT_PATH;
+
+const queries = ['what is art?', 'powerpoint']
 
 const main = async () => {
     const filename = obsidianRootPath + 'Daily/2021-12-25.md'
@@ -15,24 +18,34 @@ const main = async () => {
         .map(line => line.trim())
         .map(doc => chunkDocument(doc))
     
+    const flattenedChunks = _.flatten(chunks)
     
     const embeddings_s: (EmbeddingsResponse| null)[] = []
-    for (let i = 0; i < 5; i++) {
-        const embeddings = new Embeddings(apiKey!)
-        embeddings.setEngine('babbage-search-document')
-        const docEmbeddings = await embeddings.createEmbeddings(chunks![i]!)
-        embeddings_s.push(docEmbeddings)
-    }
+    const embeddings = new Embeddings(apiKey!)
+    embeddings.setEngine('babbage-search-document')
+    const docEmbeddings = await embeddings.createEmbeddings(flattenedChunks!.slice(0, 10))
+    embeddings_s.push(docEmbeddings)
+    
     
     const doc = {
         'filename': filename,
         'chunks': chunks,
         'embeddings_s': embeddings_s
     }
-
     console.log(doc.embeddings_s)
-    
-    
+
+    const mappedDocEmbeddings = doc.embeddings_s.map(embedding => embedding!.embeddings)
+    const queryEmbedding = await embedQuery(queries, 'babbage-search-query', apiKey!)
+
+    const searchResults = []
+    for (let i = 0; i < mappedDocEmbeddings.length; i++) {
+        const results = search(mappedDocEmbeddings[0]!, queryEmbedding!.embeddings, 1)
+
+        results.forEach((result, idx: number) => {
+        console.log(`qry: ${queries[idx]}`)
+        console.log(result)
+        })
+    }
 }
 
 main()
