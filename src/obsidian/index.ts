@@ -13,7 +13,7 @@ export default class Obsidian {
     documentWithEmbeddings: {
         filename: any;
         chunks: string[][];
-        embeddings: any;
+        embeddingsResponse: any;
     }
     prismaClient: PrismaClient;
 
@@ -26,7 +26,7 @@ export default class Obsidian {
         this.documentWithEmbeddings = {
             filename: '',
             chunks: [],
-            embeddings: {}
+            embeddingsResponse: {}
         }
     }
 
@@ -45,7 +45,7 @@ export default class Obsidian {
         const doc = {
             'filename': filename,
             'chunks': chunks,
-            'embeddings': docEmbeddings as {
+            'embeddingsResponse': docEmbeddings as {
                 embeddings: number[][]
                 text: string[]
             }
