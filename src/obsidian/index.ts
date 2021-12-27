@@ -2,6 +2,8 @@ import * as dotenv from 'dotenv';
 import { chunkDocument, readFile, EmbeddingsResponse, search } from '../utils'
 import Embeddings from '../index';
 import _ from 'lodash'
+import { PrismaClient } from '@prisma/client'
+
 dotenv.config();
 
 export default class Obsidian {
@@ -13,12 +15,13 @@ export default class Obsidian {
         chunks: string[][];
         embeddings: any;
     }
-
+    prismaClient: PrismaClient;
 
     constructor(apiKey: string, engine: string = 'babbage-search-document') {
         this.apiKey = apiKey;
         this.tag = 'obsidian';
         this.embeddingsObj = new Embeddings(this.apiKey);
+        this.prismaClient = new PrismaClient();
         this.embeddingsObj.setEngine(engine);
         this.documentWithEmbeddings = {
             filename: '',
@@ -42,7 +45,10 @@ export default class Obsidian {
         const doc = {
             'filename': filename,
             'chunks': chunks,
-            'embeddings': docEmbeddings
+            'embeddings': docEmbeddings as {
+                embeddings: number[][]
+                text: string[]
+            }
         }
 
         this.documentWithEmbeddings = doc // TODO: for classes do I need to set this or just return as normal?
@@ -54,7 +60,7 @@ export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbedding
     const searchResults = []
     for (let i = 0; i < obsidianDocuments.length; i++) {
         const doc = obsidianDocuments[i];
-        searchResults.push(search(doc!.embeddings!.embeddings, queryEmbeddings.embeddings, 1))
+        searchResults.push(search(doc!.embeddingsResponse!.embeddings, queryEmbeddings.embeddings, 1))
     }
 
     const similarityPerDocument = []
@@ -75,9 +81,17 @@ export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbedding
         const sortedBySimilarity = _.reverse(_.sortBy(groupedByQuery, 'searchResult.similarity'))
         console.log(
             `query :: ${queries[i]}
-            result :: ${obsidianDocuments[sortedBySimilarity[0]!.docNum]?.embeddings?.text[sortedBySimilarity[0]!.searchResult!.index]}` )   
+            result :: ${obsidianDocuments[sortedBySimilarity[0]!.docNum]?.embeddingsResponse?.text[sortedBySimilarity[0]!.searchResult!.index]}` )   
     }
+}
 
+export async function ObsidianFactory (apiKey: string, documentFilePath: string, engine: string = 'babbage-search-document') {
+    const obsidian = new Obsidian(apiKey, engine)
+    const doc = await obsidian.embedObsidianDocument(documentFilePath)
+    return {
+        obsidian,
+        doc
+    }
 }
 
 // INTERFACES
@@ -85,5 +99,8 @@ export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbedding
 export interface ObsidianDocumentWithEmbeddings {
     filename: string;
     chunks: string[][];
-    embeddings: EmbeddingsResponse | null;
+    embeddingsResponse: {
+        embeddings: number[][]
+        text: string[]
+    } | null;
 }

@@ -1,8 +1,8 @@
 import * as dotenv from 'dotenv';
-import { chunkDocument, readFile, embedQuery, search } from '../src/utils'
-import Embeddings from '../src/index';
-import Obsidian, { returnTopResult } from '../src/obsidian/index'
+import { embedQuery } from '../src/utils'
+import { returnTopResult, ObsidianFactory } from '../src/obsidian/index'
 import _ from 'lodash'
+import { PrismaClient } from '@prisma/client'
 dotenv.config();
 
 const apiKey = process.env.API_KEY;
@@ -12,43 +12,45 @@ const DEBUG = true
 const queries = ['goku', 'cool website']
 
 const main = async () => {
-    const obsidian = new Obsidian(apiKey!, 'babbage-search-document')
-    const obsidian2 = new Obsidian(apiKey!, 'babbage-search-document')
-    const doc = await obsidian.embedObsidianDocument(obsidianRootPath + 'Daily/2021-12-25.md')
-    const doc2 = await obsidian2.embedObsidianDocument(obsidianRootPath + 'Cool Creative Developer Portfolios.md')
 
-    const queryEmbedding = await embedQuery(queries, 'babbage-search-query', apiKey!)
-    returnTopResult([doc, doc2], queryEmbedding!, queries)
+    const obsDaily1225 = await ObsidianFactory(apiKey!, obsidianRootPath + 'Daily/2021-12-25.md', 'babbage-search-document')
 
-    // const results = search(doc.embeddings?.embeddings!, queryEmbedding!.embeddings, 1)
-    // const results2 = search(doc2.embeddings?.embeddings!, queryEmbedding!.embeddings, 1)
+    const prismaClient = new PrismaClient();
+    prismaClient.obsidian.create({
+        data: {
+            doc: obsDaily1225.doc,
+            filename: obsDaily1225.doc.filename,
+        }
+    }).then((result) => {
+        console.log(result)
+    })
+    .catch((error) => {
+        console.log(error)
+    })
 
-    // if(DEBUG) {
-    //     results.forEach((result, idx: number) => {
-    //         console.log(`qry: ${queries[idx]}`)
-    //         console.log('Index: ', result[0]?.index)
-    //         console.log('Similarity: ', result[0]?.similarity)
-    //         console.log('Text: ', doc.embeddings?.text[result[0]!.index])
-    //     }) 
-        
-    //     console.log('--------')
     
-    //     results2.forEach((result, idx: number) => {
-    //         console.log(`qry: ${queries[idx]}`)
-    //         console.log('Index: ', result[0]?.index)
-    //         console.log('Similarity: ', result[0]?.similarity)
-    //         console.log('Text: ', doc2.embeddings?.text[result[0]!.index])
-    //     })
-    // }
 
-    // for (let i = 0; i < queries.length; i++) {
-    //     console.log(`qry: ${queries[i]}`)
-    //     if (results2[i]![0]!.similarity > results[i]![0]!.similarity) {
-    //         console.log('Better result is second doc: ', doc2.embeddings?.text[results2[i]![0]!.index])
-    //     } else {
-    //         console.log('Better result is first doc: ', doc.embeddings?.text[results[i]![0]!.index])
+    // const obsDaily1225 = await ObsidianFactory(apiKey!, obsidianRootPath + 'Daily/2021-12-25.md', 'babbage-search-document')
+    // // const obsDevPortfolios = await ObsidianFactory(apiKey!, obsidianRootPath + 'Cool Creative Developer Portfolios.md', 'babbage-search-document')
+
+    // prismaClient.obsidian.create({
+    //     data: {
+    //         embeddings: obsDaily1225.doc.embeddings!.embeddings.map(embedding => JSON.stringify(embedding)),
+    //         text: obsDaily1225.doc.embeddings!.text,
+    //         tag: 'obsidian'
     //     }
-    // }
+    // }).then(user => {
+    //     console.log(user)
+    // })
+    // .catch(err => {
+    //     console.log(err)
+    // })
+
+    // const doc = obsDaily1225.doc
+    // const doc2 = obsDevPortfolios.doc
+
+    // const queryEmbedding = await embedQuery(queries, 'babbage-search-query', apiKey!)
+    // returnTopResult([doc, doc2], queryEmbedding!, queries)
 }
 
 main()
