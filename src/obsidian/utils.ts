@@ -46,14 +46,14 @@ export async function updateObsidianDocument(prismaClient: PrismaClient, filenam
         embeddings: number[][];
         text: string[];
     };
-}, newFilename?: string) {
+}, oldFilename?: string) {
     return prismaClient.obsidian.update({
         where: {
-            filename
+            filename: oldFilename ? oldFilename : filename
         },
         data: {
             doc: obsidianDocument,
-            filename: newFilename ? newFilename : obsidianDocument.filename,
+            filename: obsidianDocument.filename,
             updatedAt: new Date()
         }
     }).then((result) => {

@@ -24,10 +24,22 @@ app.get( "/", ( req, res ) => {
 app.post('/obsidian', async (req, res) => {
     try {
         const filename = req.body.filename;
-        const document = await findObsidianDocumentByFilename(prismaClient, obsidianRootPath + filename)
+        const oldFilename = req.body.oldFilename;
+        let document
+        if (oldFilename) {
+            document = await findObsidianDocumentByFilename(prismaClient, obsidianRootPath + oldFilename)
+        } else {   
+            document = await findObsidianDocumentByFilename(prismaClient, obsidianRootPath + filename)
+        }
         if (document) {
             const obsidianInstance = await ObsidianFactory(process.env.API_KEY!, obsidianRootPath + filename);
-            const saved = await updateObsidianDocument(prismaClient, obsidianRootPath + filename, obsidianInstance.doc);
+            let saved
+            if (oldFilename) {
+                saved = await updateObsidianDocument(prismaClient, obsidianRootPath + filename, obsidianInstance.doc, obsidianRootPath + oldFilename);
+            } else {
+                saved = await updateObsidianDocument(prismaClient, obsidianRootPath + filename, obsidianInstance.doc);
+            }
+            
             res.send(saved);
         } else {
             const obsidianInstance = await ObsidianFactory(process.env.API_KEY!, obsidianRootPath + filename);
