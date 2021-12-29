@@ -8,12 +8,18 @@ import path from 'path';
 export function readFile(filePath: string, isFullPath: boolean = false): Promise<string> {
     let fullPath = path.resolve(filePath)
     if (!isFullPath) fullPath = path.join(__dirname, filePath) 
-    // console.log(fullPath)
     return new Promise((resolve, reject) => {
         fs.readFile(fullPath, 'utf-8', (err, data) => {
             if (err) {
                 reject(err)
+                return
             }
+            if (data === undefined) {
+                console.log(`File ${fullPath} not found`)
+                reject(new Error(`File ${fullPath} not found`))
+                return
+            }
+            console.log(data)
             resolve(data.toString())
         })
     })

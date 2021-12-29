@@ -9,9 +9,7 @@ dotenv.config();
 
 const apiKey = process.env.API_KEY;
 const obsidianRootPath = process.env.OBSIDIAN_ROOT_PATH;
-const DEBUG = true
-
-const queries = ['henry ford industry', 'samuel morse', 'water bottle', 'apple watch', 'new experiences', 'habits']
+const queries = ['henry ford industry', 'samuel morse', 'water bottle', 'apple watch', 'new experiences', 'habits', 'dwayne johnson']
 
 const main = async () => {
     const prismaClient = new PrismaClient();
