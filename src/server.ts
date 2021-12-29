@@ -1,8 +1,7 @@
 import express from "express";
 const app = express();
 const port = 8080; // default port to listen
-import { writeObsidianDocumentToPostgres, findAllObsidianDocuments } from '../src/obsidian/utils'
-import { ObsidianFactory, returnTopResult } from '../src/obsidian/index'
+import { writeObsidianDocumentToPostgres, findAllObsidianDocuments, ObsidianFactory, returnTopResult } from '../src/obsidian/utils'
 import { embedQuery } from '../src/utils'
 import moment from "moment";
 
@@ -63,8 +62,8 @@ app.post('/query', async (req, res) => {
             }
             return remappedTypeForTS
         })
-        const top_results = returnTopResult(docs, queryEmbedding!, queries)
-        res.status(200).send(top_results);
+        const top_result = returnTopResult(docs, queryEmbedding!, queries)
+        res.status(200).send(top_result);
     } catch (err) {
         res.status(500).send(err);
     }

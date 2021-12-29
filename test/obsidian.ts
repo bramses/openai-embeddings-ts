@@ -1,9 +1,8 @@
 import * as dotenv from 'dotenv';
 import { embedQuery } from '../src/utils'
-import { returnTopResult, ObsidianFactory } from '../src/obsidian/index'
 import _ from 'lodash'
 import { PrismaClient } from '@prisma/client'
-import { findAllObsidianDocuments, findObsidianDocumentByFilename, writeObsidianDocumentToPostgres } from '../src/obsidian/utils'
+import { findAllObsidianDocuments, findObsidianDocumentByFilename, writeObsidianDocumentToPostgres, returnTopResult, ObsidianFactory } from '../src/obsidian/utils'
 
 dotenv.config();
 
