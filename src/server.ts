@@ -1,8 +1,10 @@
 import express from "express";
 const app = express();
 const port = 8080; // default port to listen
-import { writeObsidianDocumentToPostgres } from '../src/obsidian/utils'
-import { ObsidianFactory } from '../src/obsidian/index'
+import { writeObsidianDocumentToPostgres, findAllObsidianDocuments } from '../src/obsidian/utils'
+import { ObsidianFactory, returnTopResult } from '../src/obsidian/index'
+import { embedQuery } from '../src/utils'
+import moment from "moment";
 
 import * as dotenv from 'dotenv';
 dotenv.config();
@@ -26,6 +28,43 @@ app.post('/obsidian', async (req, res) => {
         const doc = await ObsidianFactory(process.env.API_KEY!, obsidianRootPath + filename);
         const saved = await writeObsidianDocumentToPostgres(prismaClient, doc.doc);
         res.send(saved);
+    } catch (err) {
+        res.status(500).send(err);
+    }
+})
+
+app.get('/files', async (req, res) => {
+    try {
+        const files = await findAllObsidianDocuments(prismaClient);
+        res.send(files.map((file) => {
+            return {
+                filename: file.filename,
+                updatedAt: moment(file.updatedAt).format('LLLL')
+            }
+        }));
+    } catch (err) {
+        res.status(500).send(err);
+    }
+})
+
+app.post('/query', async (req, res) => {
+    try {
+        const queries = [req.body.query];
+        const queryEmbedding = await embedQuery(queries, 'babbage-search-query', process.env.API_KEY!)
+        const allDocsDB = await findAllObsidianDocuments(prismaClient);
+        const docs = allDocsDB!.map((doc) => {
+            const remappedTypeForTS = doc.doc as {
+                filename: string;
+                chunks: string[][];
+                embeddingsResponse: {
+                    embeddings: number[][];
+                    text: string[];
+                };
+            }
+            return remappedTypeForTS
+        })
+        const top_results = returnTopResult(docs, queryEmbedding!, queries)
+        res.status(200).send(top_results);
     } catch (err) {
         res.status(500).send(err);
     }

@@ -8,9 +8,10 @@ export async function findObsidianDocumentByFilename(prismaClient: PrismaClient,
     }).then((result) => {
         return result;
     })
-        .catch((error) => {
-            console.log(error);
-        });
+    .catch((error) => {
+        console.log(error);
+        return {}
+    });
 }
 
 export async function writeObsidianDocumentToPostgres(prismaClient: PrismaClient, obsidianDocument: {
@@ -31,6 +32,7 @@ export async function writeObsidianDocumentToPostgres(prismaClient: PrismaClient
     })
     .catch((error) => {
         console.log(error);
+        return error;
     });
 }
 
@@ -42,5 +44,6 @@ export async function findAllObsidianDocuments(prismaClient: PrismaClient) {
         })
         .catch((error) => {
             console.log(error);
+            return []
         });
 }
