@@ -76,13 +76,18 @@ export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbedding
         similarityPerDocument.push(forQuery)
     }
 
+    const topResults = []
     for (let i = 0; i < similarityPerDocument.length; i++) {
         const groupedByQuery = similarityPerDocument[i]
         const sortedBySimilarity = _.reverse(_.sortBy(groupedByQuery, 'searchResult.similarity'))
-        console.log(
-            `query :: ${queries[i]}
-            result :: ${obsidianDocuments[sortedBySimilarity[0]!.docNum]?.embeddingsResponse?.text[sortedBySimilarity[0]!.searchResult!.index]}` )   
+        
+        topResults.push({
+            query: queries[i],
+            result: obsidianDocuments[sortedBySimilarity[0]!.docNum]?.embeddingsResponse?.text[sortedBySimilarity[0]!.searchResult!.index]
+        })
     }
+
+    return topResults
 }
 
 export async function ObsidianFactory (apiKey: string, documentFilePath: string, engine: string = 'babbage-search-document') {
