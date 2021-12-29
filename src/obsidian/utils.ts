@@ -4,7 +4,7 @@ import Obsidian from './index';
 import _ from 'lodash'
 
 export async function findObsidianDocumentByFilename(prismaClient: PrismaClient, filename: string) {
-    return prismaClient.obsidian.findMany({
+    return prismaClient.obsidian.findUnique({
         where: {
             filename
         }
@@ -13,7 +13,7 @@ export async function findObsidianDocumentByFilename(prismaClient: PrismaClient,
     })
     .catch((error) => {
         console.log(error);
-        return {}
+        return null
     });
 }
 
@@ -33,12 +33,36 @@ export async function writeObsidianDocumentToPostgres(prismaClient: PrismaClient
     }).then((result) => {
         return result;
     })
-    .catch((error) => {
+        .catch((error) => {
+            console.log(error);
+            return error;
+        });
+}
+
+export async function updateObsidianDocument(prismaClient: PrismaClient, filename: string, obsidianDocument: {
+    filename: string;
+    chunks: string[][];
+    embeddingsResponse: {
+        embeddings: number[][];
+        text: string[];
+    };
+}) {
+    return prismaClient.obsidian.update({
+        where: {
+            filename
+        },
+        data: {
+            doc: obsidianDocument,
+            filename: obsidianDocument.filename,
+            updatedAt: new Date()
+        }
+    }).then((result) => {
+        return result;
+    }).catch((error) => {
         console.log(error);
         return error;
     });
 }
-
 
 export async function findAllObsidianDocuments(prismaClient: PrismaClient) {
     return prismaClient.obsidian.findMany({})
@@ -51,7 +75,7 @@ export async function findAllObsidianDocuments(prismaClient: PrismaClient) {
         });
 }
 
-export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbeddings[], queryEmbeddings: EmbeddingsResponse, queries: string[]) {
+export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbeddings[], queryEmbeddings: EmbeddingsResponse, queries: string[], numTopResults: number = 3) {
     const searchResults = []
     for (let i = 0; i < obsidianDocuments.length; i++) {
         const doc = obsidianDocuments[i];
@@ -75,19 +99,24 @@ export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbedding
     for (let i = 0; i < similarityPerDocument.length; i++) {
         const groupedByQuery = similarityPerDocument[i]
         const sortedBySimilarity = _.reverse(_.sortBy(groupedByQuery, 'searchResult.similarity'))
-        
-        topResults.push({
-            query: queries[i],
-            result: obsidianDocuments[sortedBySimilarity[0]!.docNum]?.embeddingsResponse?.text[sortedBySimilarity[0]!.searchResult!.index],
-            filename: obsidianDocuments[sortedBySimilarity[0]!.docNum]?.filename,
-            tag: 'obsidian'
-        })
+
+        const results = []
+        for (let j = 0; j < Math.min(sortedBySimilarity.length, numTopResults); j++) {
+            results.push({
+                query: queries[i],
+                result: obsidianDocuments[sortedBySimilarity[j]!.docNum]?.embeddingsResponse?.text[sortedBySimilarity[j]!.searchResult!.index],
+                filename: obsidianDocuments[sortedBySimilarity[j]!.docNum]?.filename,
+                tag: 'obsidian'
+            })
+        }
+
+        topResults.push(results)
     }
 
     return topResults
 }
 
-export async function ObsidianFactory (apiKey: string, documentFilePath: string, engine: string = 'babbage-search-document') {
+export async function ObsidianFactory(apiKey: string, documentFilePath: string, engine: string = 'babbage-search-document') {
     const obsidian = new Obsidian(apiKey, engine)
     const doc = await obsidian.embedObsidianDocument(documentFilePath)
     return {

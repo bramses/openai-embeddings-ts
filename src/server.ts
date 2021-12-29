@@ -1,7 +1,7 @@
 import express from "express";
 const app = express();
 const port = 8080; // default port to listen
-import { writeObsidianDocumentToPostgres, findAllObsidianDocuments, ObsidianFactory, returnTopResult } from '../src/obsidian/utils'
+import { writeObsidianDocumentToPostgres, findAllObsidianDocuments, ObsidianFactory, returnTopResult, findObsidianDocumentByFilename, updateObsidianDocument } from '../src/obsidian/utils'
 import { embedQuery } from '../src/utils'
 import moment from "moment";
 
@@ -24,9 +24,16 @@ app.get( "/", ( req, res ) => {
 app.post('/obsidian', async (req, res) => {
     try {
         const filename = req.body.filename;
-        const doc = await ObsidianFactory(process.env.API_KEY!, obsidianRootPath + filename);
-        const saved = await writeObsidianDocumentToPostgres(prismaClient, doc.doc);
-        res.send(saved);
+        const document = await findObsidianDocumentByFilename(prismaClient, obsidianRootPath + filename)
+        if (document) {
+            const obsidianInstance = await ObsidianFactory(process.env.API_KEY!, obsidianRootPath + filename);
+            const saved = await updateObsidianDocument(prismaClient, obsidianRootPath + filename, obsidianInstance.doc);
+            res.send(saved);
+        } else {
+            const obsidianInstance = await ObsidianFactory(process.env.API_KEY!, obsidianRootPath + filename);
+            const saved = await writeObsidianDocumentToPostgres(prismaClient, obsidianInstance.doc);
+            res.send(saved);
+        }
     } catch (err) {
         res.status(500).send(err);
     }
