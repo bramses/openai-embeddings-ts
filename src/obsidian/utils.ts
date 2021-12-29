@@ -46,14 +46,14 @@ export async function updateObsidianDocument(prismaClient: PrismaClient, filenam
         embeddings: number[][];
         text: string[];
     };
-}) {
+}, newFilename?: string) {
     return prismaClient.obsidian.update({
         where: {
             filename
         },
         data: {
             doc: obsidianDocument,
-            filename: obsidianDocument.filename,
+            filename: newFilename ? newFilename : obsidianDocument.filename,
             updatedAt: new Date()
         }
     }).then((result) => {
@@ -75,7 +75,7 @@ export async function findAllObsidianDocuments(prismaClient: PrismaClient) {
         });
 }
 
-export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbeddings[], queryEmbeddings: EmbeddingsResponse, queries: string[], numTopResults: number = 3) {
+export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbeddings[], queryEmbeddings: EmbeddingsResponse, queries: string[], numTopResults: number = 1) {
     const searchResults = []
     for (let i = 0; i < obsidianDocuments.length; i++) {
         const doc = obsidianDocuments[i];
