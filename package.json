@@ -7,6 +7,7 @@
     "start": "tsc --build && node lib/src/index.js",
     "test": "tsc --build && node lib/test/index.js",
     "server": "tsc --build && node lib/src/server.js",
+    "batch-obsidian-job": "tsc --build && node lib/test/batch-obsidian-job.js",
     "test-obsidian": "tsc --build && node lib/test/obsidian.js",
     "test-youtube": "tsc --build && node lib/test/youtube.js",
     "build": "tsc --build",

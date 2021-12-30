@@ -9,7 +9,31 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { PrismaClient } from '@prisma/client'
-const prismaClient = new PrismaClient();
+const prismaClient = new PrismaClient({
+    log: [
+      {
+        emit: 'event',
+        level: 'query',
+      },
+      {
+        emit: 'stdout',
+        level: 'error',
+      },
+      {
+        emit: 'stdout',
+        level: 'info',
+      },
+      {
+        emit: 'stdout',
+        level: 'warn',
+      },
+    ],
+  });
+
+prismaClient.$on('query', (e:any) => {
+    console.log('Query: ' + e.query)
+    console.log('Duration: ' + e.duration + 'ms')
+  })
 
 const obsidianRootPath = process.env.OBSIDIAN_ROOT_PATH;
 
@@ -25,6 +49,7 @@ app.post('/obsidian', async (req, res) => {
     try {
         const filename = req.body.filename;
         const oldFilename = req.body.oldFilename;
+        const dontUpdate = req.body.dontUpdate; // a flag to not update existing files
         let document
         if (oldFilename) {
             document = await findObsidianDocumentByFilename(prismaClient, obsidianRootPath + oldFilename)
@@ -32,6 +57,7 @@ app.post('/obsidian', async (req, res) => {
             document = await findObsidianDocumentByFilename(prismaClient, obsidianRootPath + filename)
         }
         if (document) {
+            if (dontUpdate) res.status(201).send(document);
             const obsidianInstance = await ObsidianFactory(process.env.API_KEY!, obsidianRootPath + filename);
             let saved
             if (oldFilename) {
@@ -47,6 +73,7 @@ app.post('/obsidian', async (req, res) => {
             res.send(saved);
         }
     } catch (err) {
+        console.error(err)
         res.status(500).send(err);
     }
 })
@@ -84,6 +111,7 @@ app.post('/query', async (req, res) => {
         const top_result = returnTopResult(docs, queryEmbedding!, queries)
         res.status(200).send(top_result);
     } catch (err) {
+        console.error(err);
         res.status(500).send(err);
     }
 })

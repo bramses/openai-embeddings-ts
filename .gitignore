@@ -2,3 +2,4 @@ node_modules
 .env
 lib
 obsidian-docs
+.DS_Store

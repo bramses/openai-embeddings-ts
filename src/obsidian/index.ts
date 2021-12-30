@@ -34,11 +34,23 @@ export default class Obsidian {
         const txt = await readFile(filename, true)
         const chunks = txt
             .split('\n')
-            .filter(line => line.length > 0)
+            .filter(line => line.trim().length > 0)
             .map(line => JSON.stringify(line.trim()))
             .map(doc => chunkDocument(doc))
 
         const flattenedChunks = _.flatten(chunks)
+
+        if (flattenedChunks.length === 0) {
+            console.log('No text found in document')
+            return {
+                filename: filename,
+                chunks: [],
+                embeddingsResponse: {
+                    embeddings: [],
+                    text: []
+                }
+            }
+        }
 
         const docEmbeddings = await this.embeddingsObj.createEmbeddings(flattenedChunks!)
 

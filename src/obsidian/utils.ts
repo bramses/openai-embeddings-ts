@@ -65,8 +65,13 @@ export async function updateObsidianDocument(prismaClient: PrismaClient, filenam
 }
 
 export async function findAllObsidianDocuments(prismaClient: PrismaClient) {
-    return prismaClient.obsidian.findMany({})
+    const rawQuery = await prismaClient.$queryRaw`SELECT * FROM obsidian`
+    console.log(rawQuery) // TODO: Cant fetch all docs, need some sort of cache or pagination
+    return prismaClient.obsidian.findMany({
+        take: 10
+    })
         .then((result) => {
+            console.log(result);
             return result;
         })
         .catch((error) => {
@@ -75,11 +80,14 @@ export async function findAllObsidianDocuments(prismaClient: PrismaClient) {
         });
 }
 
-export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbeddings[], queryEmbeddings: EmbeddingsResponse, queries: string[], numTopResults: number = 1) {
+export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbeddings[], queryEmbeddings: EmbeddingsResponse, queries: string[], numTopResults: number = 3) {
     const searchResults = []
+    let offset = 0
     for (let i = 0; i < obsidianDocuments.length; i++) {
         const doc = obsidianDocuments[i];
-        searchResults.push(search(doc!.embeddingsResponse!.embeddings, queryEmbeddings.embeddings, 1))
+        
+        if (doc && doc.embeddingsResponse) searchResults.push(search(doc!.embeddingsResponse!.embeddings, queryEmbeddings.embeddings, 1))
+        else offset++ // used for empty documents, not sure how to handle them yet
     }
 
     const similarityPerDocument = []
@@ -104,8 +112,8 @@ export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbedding
         for (let j = 0; j < Math.min(sortedBySimilarity.length, numTopResults); j++) {
             results.push({
                 query: queries[i],
-                result: obsidianDocuments[sortedBySimilarity[j]!.docNum]?.embeddingsResponse?.text[sortedBySimilarity[j]!.searchResult!.index],
-                filename: obsidianDocuments[sortedBySimilarity[j]!.docNum]?.filename,
+                result: obsidianDocuments[sortedBySimilarity[j]!.docNum - offset]?.embeddingsResponse?.text[sortedBySimilarity[j]!.searchResult!.index],
+                filename: obsidianDocuments[sortedBySimilarity[j]!.docNum - offset]?.filename,
                 tag: 'obsidian'
             })
         }
