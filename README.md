@@ -1,6 +1,6 @@
 # openai-embeddings-ts
 
-In its current state, the project sits alongside the Obsidian folder. Meaning, I'm using node.js to go to my Obsidian root folder and read all the markdown files. From there it chunks and embeds them as vectors with OpenAI embeddings (https://beta.openai.com/docs/guides/embeddings/what-are-embeddings). Then I store those vectors in a local database (I went with Postgres https://www.postgresql.org/ but you could do anything that holds data like Mongo, Firebase, etc). To query, I wrote an endpoint that is like a Google Search Bar. You type what you want, and it gets converted into a vector itself (using OpenAI for this as well) and then it uses cosine similarity (https://en.wikipedia.org/wiki/Cosine_similarity) to find the best matches
+In its current state, the project sits alongside the Obsidian folder. Meaning, the project uses node.js to go to the Obsidian root folder and read all the markdown files. From there it chunks and embeds them as vectors with OpenAI embeddings (https://beta.openai.com/docs/guides/embeddings/what-are-embeddings). Then it stores those vectors in a local database (I went with Postgres https://www.postgresql.org/ but you could do anything that holds data like Mongo, Firebase, etc). To query,  there is an endpoint (`/query`) that is like a Google Search Bar. You type what you want, and it gets converted into a vector itself (using OpenAI for this as well) and then it uses cosine similarity (https://en.wikipedia.org/wiki/Cosine_similarity) to find the best matches
 
 **very much WIP state!**
 
@@ -10,9 +10,9 @@ git clone this repo -> `npm install` -> copy values from `.env.example` into `.e
 
 ## usage
 
-`POST /obsidian` - add a new Obsidian Markdown file to the database
-`POST /query` - search all vectors in the database
-`GET /files` - list all files in database
+- `POST /obsidian` - add a new Obsidian Markdown file to the database
+- `POST /query` - search all vectors in the database
+- `GET /files` - list all files in database
 
 ## what is semantic search
 
