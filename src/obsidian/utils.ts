@@ -2,6 +2,8 @@ import { PrismaClient } from '@prisma/client'
 import { EmbeddingsResponse, search } from '../utils'
 import Obsidian from './index';
 import _ from 'lodash'
+import { prismaOffsetPagination } from 'prisma-offset-pagination';
+
 
 export async function findObsidianDocumentByFilename(prismaClient: PrismaClient, filename: string) {
     return prismaClient.obsidian.findUnique({
@@ -65,18 +67,68 @@ export async function updateObsidianDocument(prismaClient: PrismaClient, filenam
 }
 
 export async function findAllObsidianDocuments(prismaClient: PrismaClient) {
-    const count = await prismaClient.obsidian.count()
-    const pages = Math.ceil(count / 100)
-    const allDocsPromises = []
-    for (let i = 0; i < pages; i++) {
-        const page = prismaClient.obsidian.findMany({
-            skip: i * 100,
-            take: 100
-        })
-        allDocsPromises.push(page)
+    
+    try {
+        // offset method ~ 13 seconds for 1000 documents
+        const count = await prismaClient.obsidian.count()
+        const pages = Math.ceil(count / 100)
+        const allDocsPromises = []
+        for (let i = 0; i < pages; i++) {
+            const page = prismaClient.obsidian.findMany({
+                skip: i * 100,
+                take: 100
+            })
+            allDocsPromises.push(page)
+        }
+        const allDocs = await Promise.all(allDocsPromises)
+        return _.flatten(allDocs)
+    
+        // cursor method ~25 seconds for 1000 documents
+        // const allDocs = []
+        // let queryResults = await prismaClient.obsidian.findMany({
+        //     take: 100
+        // })
+        // while (queryResults.length > 0) {
+        //     allDocs.push(...queryResults)
+        //     console.log(queryResults[queryResults.length - 1]!.id)
+        //     queryResults = await prismaClient.obsidian.findMany({
+        //         take: 100,
+        //         skip: 1,
+        //         cursor: {
+        //             id: queryResults[queryResults.length - 1]!.id
+        //         }
+        //     })
+        // }
+        // console.log(allDocs.length)
+        // return allDocs
+    
+        // prisma-offset-pagination method fails with: Invalid `prismaModel.findMany()` invocation
+        // const result = await prismaOffsetPagination({
+        //     model: { name: 'obsidian' },
+        //     size: 100,
+        //     orderBy: 'id',
+        //     orderDirection: 'desc',
+        //     buttonNum: 11,
+        //     prisma: prismaClient
+        // });
+        // console.log(result)
+        // return [{
+        //     doc: { filename: 'string', chunks: [['q']], embeddingsResponse: { embeddings: [[0]], text: ['hi'] } },
+        //     id: 1,
+        //     filename: 'blah',
+        //     updatedAt: new Date(),
+        //     createdAt: new Date()
+        // }];
+    } catch (err) {
+        console.error(err)
+        return [{
+            doc: { filename: 'string', chunks: [['q']], embeddingsResponse: { embeddings: [[0]], text: ['hi'] } },
+            id: 1,
+            filename: 'blah',
+            updatedAt: new Date(),
+            createdAt: new Date()
+        }];
     }
-    const allDocs = await Promise.all(allDocsPromises)
-    return _.flatten(allDocs)
 }
 
 export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbeddings[], queryEmbeddings: EmbeddingsResponse, queries: string[], numTopResults: number = 3) {
