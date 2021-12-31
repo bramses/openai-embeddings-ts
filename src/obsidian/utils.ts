@@ -65,63 +65,70 @@ export async function updateObsidianDocument(prismaClient: PrismaClient, filenam
 }
 
 export async function findAllObsidianDocuments(prismaClient: PrismaClient) {
-    const rawQuery = await prismaClient.$queryRaw`SELECT * FROM obsidian`
-    console.log(rawQuery) // TODO: Cant fetch all docs, need some sort of cache or pagination
-    return prismaClient.obsidian.findMany({
-        take: 10
-    })
-        .then((result) => {
-            console.log(result);
-            return result;
+    const count = await prismaClient.obsidian.count()
+    const pages = Math.ceil(count / 100)
+    const allDocsPromises = []
+    for (let i = 0; i < pages; i++) {
+        const page = prismaClient.obsidian.findMany({
+            skip: i * 100,
+            take: 100
         })
-        .catch((error) => {
-            console.log(error);
-            return []
-        });
+        allDocsPromises.push(page)
+    }
+    const allDocs = await Promise.all(allDocsPromises)
+    return _.flatten(allDocs)
 }
 
 export function returnTopResult(obsidianDocuments: ObsidianDocumentWithEmbeddings[], queryEmbeddings: EmbeddingsResponse, queries: string[], numTopResults: number = 3) {
-    const searchResults = []
-    let offset = 0
-    for (let i = 0; i < obsidianDocuments.length; i++) {
-        const doc = obsidianDocuments[i];
-        
-        if (doc && doc.embeddingsResponse) searchResults.push(search(doc!.embeddingsResponse!.embeddings, queryEmbeddings.embeddings, 1))
-        else offset++ // used for empty documents, not sure how to handle them yet
-    }
-
-    const similarityPerDocument = []
-    for (let i = 0; i < queries.length; i++) {
-        const forQuery = []
-        for (let j = 0; j < searchResults.length; j++) {
-            const searchResult = searchResults[j]
-            forQuery.push({
-                searchResult: searchResult![i]![0],
-                docNum: j
-            })
+    try {
+        const searchResults = []
+        let offset = 0
+        for (let i = 0; i < obsidianDocuments.length; i++) {
+            const doc = obsidianDocuments[i];
+            
+            if (doc && doc.embeddingsResponse) searchResults.push(search(doc!.embeddingsResponse!.embeddings, queryEmbeddings.embeddings, 1))
+            else {
+                console.log(`No embeddings for ${doc!.filename}`)
+                offset++ // used for empty documents, not sure how to handle them yet
+            }
         }
-        similarityPerDocument.push(forQuery)
-    }
-
-    const topResults = []
-    for (let i = 0; i < similarityPerDocument.length; i++) {
-        const groupedByQuery = similarityPerDocument[i]
-        const sortedBySimilarity = _.reverse(_.sortBy(groupedByQuery, 'searchResult.similarity'))
-
-        const results = []
-        for (let j = 0; j < Math.min(sortedBySimilarity.length, numTopResults); j++) {
-            results.push({
-                query: queries[i],
-                result: obsidianDocuments[sortedBySimilarity[j]!.docNum - offset]?.embeddingsResponse?.text[sortedBySimilarity[j]!.searchResult!.index],
-                filename: obsidianDocuments[sortedBySimilarity[j]!.docNum - offset]?.filename,
-                tag: 'obsidian'
-            })
+    
+        const similarityPerDocument = []
+        for (let i = 0; i < queries.length; i++) {
+            const forQuery = []
+            for (let j = 0; j < searchResults.length - offset; j++) {
+                const searchResult = searchResults[j]
+                forQuery.push({
+                    searchResult: searchResult![i]![0],
+                    docNum: j
+                })
+            }
+            similarityPerDocument.push(forQuery)
         }
-
-        topResults.push(results)
+    
+        const topResults = []
+        for (let i = 0; i < similarityPerDocument.length; i++) {
+            const groupedByQuery = similarityPerDocument[i]
+            const sortedBySimilarity = _.reverse(_.sortBy(groupedByQuery, 'searchResult.similarity'))
+    
+            const results = []
+            for (let j = 0; j < Math.min(sortedBySimilarity.length, numTopResults); j++) {
+                results.push({
+                    query: queries[i],
+                    result: obsidianDocuments[sortedBySimilarity[j]!.docNum - offset]?.embeddingsResponse?.text[sortedBySimilarity[j]!.searchResult!.index],
+                    filename: obsidianDocuments[sortedBySimilarity[j]!.docNum - offset]?.filename,
+                    tag: 'obsidian'
+                })
+            }
+    
+            topResults.push(results)
+        }
+    
+        return topResults
+    } catch (err) {
+        console.log(err)
+        return []
     }
-
-    return topResults
 }
 
 export async function ObsidianFactory(apiKey: string, documentFilePath: string, engine: string = 'babbage-search-document') {

@@ -97,6 +97,7 @@ app.post('/query', async (req, res) => {
         const queries = [req.body.query];
         const queryEmbedding = await embedQuery(queries, 'babbage-search-query', process.env.API_KEY!)
         const allDocsDB = await findAllObsidianDocuments(prismaClient);
+        console.log(allDocsDB.length)
         const docs = allDocsDB!.map((doc) => {
             const remappedTypeForTS = doc.doc as {
                 filename: string;
@@ -107,6 +108,8 @@ app.post('/query', async (req, res) => {
                 };
             }
             return remappedTypeForTS
+        }).filter((doc) => {
+            return doc.embeddingsResponse && doc.embeddingsResponse.embeddings.length > 0
         })
         const top_result = returnTopResult(docs, queryEmbedding!, queries)
         res.status(200).send(top_result);
